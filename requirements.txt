@@ -1,0 +1,14 @@
+autocorrect==2.3.0
+cefpython3==66.1
+httplib2==0.18.1
+pipwin==0.5.0
+PyAudio @ file:///C:/Users/Dr%20Steve/pipwin/PyAudio-0.2.11-cp38-cp38-win32.whl
+PyAutoGUI==0.9.52
+pyttsx==1.1
+pyttsx3==2.90
+pywin32==300
+SpeechRecognition==3.8.1
+textdistance==4.2.1
+ttkthemes==3.2.2
+wikipedia==1.4.0
+wolframalpha==4.1.0
