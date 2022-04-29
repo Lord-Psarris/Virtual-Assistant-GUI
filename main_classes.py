@@ -1,17 +1,17 @@
 # imports
-import speech_recognition as sr
-import wolframalpha
-import wikipedia
-import requests
-import webbrowser
-import threading
-import time
-import pyttsx3
 import http.client as http
 import pyautogui
+import pyttsx3
+import requests
+import speech_recognition as sr
+import time
+import wikipedia
+import wolframalpha
+
+import CONFIG as CF
 
 # necessities
-appId = 'APER4E-58XJGHAVAK'  # get the wolfram alpha app id
+appId = CF.WOLFRAM_ALPHA_API_KEY  # get the wolfram alpha app id
 client = wolframalpha.Client(appId)
 speaker = pyttsx3.init()
 voices = speaker.getProperty('voices')  # getting details of current voice
