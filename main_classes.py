@@ -64,7 +64,7 @@ class Main:
                     if answer is None:
                         wiki = Wiki(command).__()
                         if wiki is None:
-                            return 'No Result'
+                            return None
                         else:
                             self.answer = wiki
                             print('3')

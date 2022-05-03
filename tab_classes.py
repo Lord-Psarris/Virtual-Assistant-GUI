@@ -9,6 +9,32 @@ import autocorrect
 from main_classes import *
 
 
+def create_new_label(main_frame, label_text='', side=None, larger=False, last_label_position=None):
+    print(dir(main_frame.winfo_children()[0]))
+    wrap_length = 185
+    width = 30
+    frame_y_padding = 10
+
+    if larger:
+        wrap_length = 330
+        width = 50
+
+    side = LEFT if side is None else side
+    anchor = "w" if side == LEFT else "e"
+
+    if last_label_position == side:
+        frame_y_padding = 0
+
+    word_frame_main = ttk.Frame(main_frame)
+    listening = Label(word_frame_main, text=label_text, relief=SOLID, wraplength=wrap_length,
+                      bd=1, anchor=anchor,
+                      padx=5,
+                      justify=side,
+                      width=width)
+    listening.pack(side=side)
+    word_frame_main.pack(fill=X, padx=20, pady=frame_y_padding)
+
+
 class TextSearchTab(tk.Frame):
 
     def __init__(self, root):
@@ -79,9 +105,11 @@ class TextSearchTab(tk.Frame):
 
 
 class VoiceSearchTab(tk.Frame):
+
     def __init__(self, root):
         tk.Frame.__init__(self, root)
         self.root = root
+        self.last_label_position = LEFT
 
         self.container = ttk.Frame(self)
         self.canvas = Canvas(self.container, highlightthickness=0)
@@ -115,69 +143,53 @@ class VoiceSearchTab(tk.Frame):
         voice_search_thread.start()
 
     def search_using_speech_data(self):
-        word_frame_main = ttk.Frame(self.scrollable_frame)
-        listening = Label(word_frame_main, text='Listening...', relief=SOLID, wraplength=185,
-                          bd=1, anchor='w',
-                          padx=5,
-                          justify=LEFT,
-                          width=30)
-        listening.pack(side=LEFT)
-        word_frame_main.pack(fill=X, padx=20, pady=10)
+        # create label to indicate listening
+        create_new_label(self.scrollable_frame, label_text='Listening')
+        self.last_label_position = LEFT
 
         try:
-            with sr.Microphone() as source:
+            with sr.Microphone(sample_rate=48000, chunk_size=2048) as source:
+                # get speach data
                 speech.adjust_for_ambient_noise(source, duration=0.5)
-                audio = speech.listen(source, timeout=2)
-                command = speech.recognize_google(audio)
-                word_frame = ttk.Frame(self.scrollable_frame)
-                question = Label(word_frame, text=command, relief=SOLID, wraplength=185, bd=1, anchor='e', padx=5,
-                                 justify=RIGHT, width=30)
-                question.pack(side=RIGHT)
-                word_frame.pack(fill=X, padx=20, pady=10)
-                print('done')
-                t = threading.Thread(target=self.respond_to_query, args=(command,))
+                audio_data = speech.listen(source, timeout=1, phrase_time_limit=10)
+                voice_command = speech.recognize_google(audio_data)
+
+                create_new_label(self.scrollable_frame, label_text=voice_command, side=RIGHT,
+                                 last_label_position=self.last_label_position)
+                self.last_label_position = RIGHT
+
+                # respond to user
+                t = threading.Thread(target=self.respond_to_query, args=(voice_command,))
                 t.start()
         except speech_recognition.UnknownValueError:
-            return None
+            create_new_label(self.scrollable_frame,
+                             label_text='Unable to understand statement. Click the button to try again', larger=True,
+                             last_label_position=self.last_label_position)
+            self.last_label_position = LEFT
 
-    def respond_to_query(self, word):
-        word_frame_main = ttk.Frame(self.scrollable_frame)
-        m = Main(word).__()
-        print(m)
-        if m == 'No Result':
-            word_frame_main = ttk.Frame(self.scrollable_frame)
-            listening = Label(word_frame_main, text='Sorry, didn\'t get that.', relief=SOLID, wraplength=185,
-                              bd=1, anchor='w',
-                              padx=5,
-                              justify=LEFT,
-                              width=30)
-            listening.pack(side=LEFT)
-            word_frame_main.pack(fill=X, padx=20, pady=10)
+        except speech_recognition.RequestError:
+            create_new_label(self.scrollable_frame,
+                             label_text='Couldn\'t process request. Click the button to try again', larger=True,
+                             last_label_position=self.last_label_position)
+            self.last_label_position = LEFT
 
-            word_frame_main = ttk.Frame(self.scrollable_frame)
-            listening = Label(word_frame_main, text='Click the button to try again', relief=SOLID, wraplength=185,
-                              bd=1, anchor='w',
-                              padx=5,
-                              justify=LEFT,
-                              width=30)
-            listening.pack(side=LEFT)
-            word_frame_main.pack(fill=X, padx=20, pady=10)
-        else:
-            word_frame_main = ttk.Frame(self.scrollable_frame)
-            listening = Label(word_frame_main, text=m, relief=SOLID, wraplength=185,
-                              bd=1, anchor='w',
-                              padx=5,
-                              justify=LEFT,
-                              width=30)
-            listening.pack(side=LEFT)
-            word_frame_main.pack(fill=X, padx=20, pady=10)
-            Play(m).__()
+    def respond_to_query(self, voice_command):
+        # get search result
+        search_result = Main(voice_command).__()
 
-            word_frame_main = ttk.Frame(self.scrollable_frame)
-            listening = Label(word_frame_main, text='Click the button to try again', relief=SOLID, wraplength=185,
-                              bd=1, anchor='w',
-                              padx=5,
-                              justify=LEFT,
-                              width=30)
-            listening.pack(side=LEFT)
-            word_frame_main.pack(fill=X, padx=20, pady=10)
+        # adjust label width to accommodate large data
+        if search_result is not None:
+            larger = True if len(search_result) >= 30 else False
+
+            create_new_label(self.scrollable_frame, label_text=search_result, larger=larger,
+                             last_label_position=self.last_label_position)
+            self.last_label_position = LEFT
+
+            create_new_label(self.scrollable_frame, label_text='Click the button to continue',
+                             last_label_position=self.last_label_position)
+            return
+
+        create_new_label(self.scrollable_frame,
+                         label_text='Couldn\'t process request. Click the button to try again', larger=True)
+
+        self.last_label_position = LEFT

@@ -41,7 +41,7 @@ def is_valid_url(url):
 
     p = re.compile(regex)
 
-    if url == None:
+    if url is None:
         return False
 
     if re.search(p, url):
